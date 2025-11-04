@@ -1,24 +1,24 @@
 services:
   fluentbit:
-    image: fluent/fluent-bit:latest-debug
+    image: fluent/fluent-bit:latest
     container_name: fluentbit
     restart: always
-    volumes:
-      - ./fluent-bit/fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
-      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: [ "fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.yaml" ]
     ports:
-      - "2020:2020"
+      - "${FLB_PORT:-24224}:24224"
+      # - "2020:2020" # this might be nice if using http
     environment:
-      - DOCKER_BACKEND_CONTAINER_PATH
       - FLB_LOG_LEVEL
       - FLB_LOG_SERVER_HOST
       - FLB_LOG_SERVER_PORT
       - FLB_LOG_SERVER_API_ENDPOINT
-    command: [ "fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.yaml" ]
     networks:
       - logging-net
+    volumes:
+      - ./fluent-bit/fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
 
 networks:
   logging-net:
+      external: true
+

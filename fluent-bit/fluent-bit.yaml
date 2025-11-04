@@ -9,33 +9,20 @@ service :
   flush: 5
   grace: 5
   daemon: off
-  dns.mode: UDP
-  log_file: none
   log_level: ${FLB_LOG_LEVEL}
   parsers_file: parsers.conf # we might want to use a custom parser file
-  stream_file: none
   http_server: off
-  http_listen: 0.0.0.0
-  http_port: 2020
-  coro_stack_size: 24576
-  scheduler.cap: 2000
-  scheduler.base: 5
-  json.convert_nan_to_null: false
-  sp.convert_from_str_to_num: false # i do not see why this should be true by default
 
 pipeline:
   inputs:
-    - name: tail
-      path: ${DOCKER_BACKEND_CONTAINER_PATH} # /var/lib/docker/containers/*/*.log # we grab all docker container logs
+    - name: forward
+      listen: 0.0.0.0
+      port: ${FLB_PORT}:24224
       tag: docker.*
-      parser: docker
-      refresh_interval: 10
-      skip_long_lines: on
-      mem_buf_limit: 10MB
-  filters:
-    - name: grep
-      match: "*"
-      regex: "log /backend/" # only log from container with 'backend' in its name
+  # filters: # note: filters is commented since i need to really understand them before configuring them
+  #  - name: grep
+  #    match: "docker.*"
+  #    regex: "tag backend" # only log from inputs with 'backend.*' tags
   outputs:
     - name: http
       match: docker.*
