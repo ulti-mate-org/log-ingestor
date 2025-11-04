@@ -1,0 +1,55 @@
+# Fluent Bit configuration file for log collection and forwarding
+#
+# This file is part of the ulti-mate organization logging service,
+# see: https://ulti-mate.org or https://github.com/ulti-mate-org/logging.git
+#
+# author: Emiliano Rizzonelli (emiliano.rizzonelli@proton.me)
+  
+service :
+  flush: 5
+  grace: 5
+  daemon: off
+  dns.mode: UDP
+  log_file: none
+  log_level: ${FLB_LOG_LEVEL}
+  parsers_file: parsers.conf # we might want to use a custom parser file
+  stream_file: none
+  http_server: off
+  http_listen: 0.0.0.0
+  http_port: 2020
+  coro_stack_size: 24576
+  scheduler.cap: 2000
+  scheduler.base: 5
+  json.convert_nan_to_null: false
+  sp.convert_from_str_to_num: false # i do not see why this should be true by default
+
+pipeline:
+  inputs:
+    - name: tail
+      path: ${DOCKER_BACKEND_CONTAINER_PATH} # /var/lib/docker/containers/*/*.log # we grab all docker container logs
+      tag: docker.*
+      parser: docker
+      refresh_interval: 10
+      skip_long_lines: on
+      mem_buf_limit: 10MB
+  filters:
+    - name: grep
+      match: "*"
+      regex: "log /backend/" # only log from container with 'backend' in its name
+  outputs:
+    - name: http
+      match: docker.*
+      host: ${FLB_LOG_SERVER_HOST}
+      port: ${FLB_LOG_SERVER_PORT}
+      uri: ${FLB_LOG_SERVER_API_ENDPOINT}
+      format: json_lines
+      json_date_key: timestamp
+      json_date_format: iso8601
+      header: Content-Type application/json
+      retry_limit: 5
+      tls: off
+    - name: stdout
+      match: docker.*
+      format: json_lines
+      json_date_key: timestamp
+      json_date_format: iso8601  

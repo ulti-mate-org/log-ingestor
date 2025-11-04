@@ -1,0 +1,24 @@
+services:
+  fluentbit:
+    image: fluent/fluent-bit:latest-debug
+    container_name: fluentbit
+    restart: always
+    volumes:
+      - ./fluent-bit/fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "2020:2020"
+    environment:
+      - DOCKER_BACKEND_CONTAINER_PATH
+      - FLB_LOG_LEVEL
+      - FLB_LOG_SERVER_HOST
+      - FLB_LOG_SERVER_PORT
+      - FLB_LOG_SERVER_API_ENDPOINT
+    command: [ "fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.yaml" ]
+    networks:
+      - logging-net
+
+networks:
+  logging-net:
