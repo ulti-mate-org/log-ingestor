@@ -6,7 +6,7 @@ services:
     container_name: log-ingestor
     restart: unless-stopped
     ports:
-      - "${INGESTOR_PORT:-8080}:8080
+      - "${INGESTOR_PORT:-8080}:8080"
     networks:
       - logging-net
 
