@@ -1,4 +1,14 @@
 services:
+  log-ingestor:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingestor
+    container_name: log-ingestor
+    restart: unless-stopped
+    networks:
+      - logging-net
+
+
   fluentbit:
     image: fluent/fluent-bit:latest
     container_name: fluentbit
