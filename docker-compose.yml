@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile.ingestor
     container_name: log-ingestor
     restart: unless-stopped
+    ports:
+      - "${INGESTOR_PORT:-8080}:8080
     networks:
       - logging-net
 
@@ -20,7 +22,7 @@ services:
     environment:
       - FLB_LOG_LEVEL
       - FLB_LOG_SERVER_HOST
-      - FLB_LOG_SERVER_PORT
+      - INGESTOR_PORT
       - FLB_LOG_SERVER_API_ENDPOINT
     networks:
       - logging-net
