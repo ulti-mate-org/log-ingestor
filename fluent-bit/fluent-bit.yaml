@@ -27,7 +27,7 @@ pipeline:
     - name: http
       match: docker.*
       host: ${FLB_LOG_SERVER_HOST}
-      port: ${FLB_LOG_SERVER_PORT}
+      port: 8080
       uri: ${FLB_LOG_SERVER_API_ENDPOINT}
       format: json_lines
       json_date_key: timestamp
