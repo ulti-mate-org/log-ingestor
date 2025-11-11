@@ -5,32 +5,44 @@ services:
       dockerfile: Dockerfile.ingestor
     container_name: log-ingestor
     restart: unless-stopped
+    depends_on:
+      - elasticsearch
     ports:
       - "${INGESTOR_PORT:-8080}:8080"
     networks:
       - logging-net
-
-
-  fluentbit:
-    image: fluent/fluent-bit:latest
-    container_name: fluentbit
-    restart: always
-    command: [ "fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.yaml" ]
-    ports:
-      - "${FLB_PORT:-24224}:24224"
-      # - "2020:2020" # this might be nice if using http
+      
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+    container_name: elasticsearch
+    restart: unless-stopped
     environment:
-      - FLB_LOG_LEVEL
-      - FLB_LOG_SERVER_HOST
-      - INGESTOR_PORT
-      - FLB_LOG_SERVER_API_ENDPOINT
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - path.repo=/usr/share/elasticsearch/snapshots
+      - xpack.security.enabled=false # has to be disabled since it is true by default, obviously very unsafe NOT EVEN CLOSE TO PRODUCTION READY
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+      - ./snapshots:/usr/share/elasticsearch/snapshots
     networks:
       - logging-net
-    volumes:
-      - ./fluent-bit/fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml:ro
-      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
-
+    
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.2.0
+    container_name: kibana
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_SSL_ENABLED=false
+    ports:
+      - "5601:5601"
+    networks:
+      - logging-net
+      
 networks:
   logging-net:
       external: true
-
