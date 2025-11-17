@@ -1,0 +1,17 @@
+server.host: "0.0.0.0"
+server.port: 5601
+
+# enable tls for kibana ui
+server.ssl.enabled: true
+server.ssl.certificate: /usr/share/kibana/config/certs/elastic-cert.crt
+server.ssl.key: /usr/share/kibana/config/certs/elastic-cert.key
+elasticsearch.ssl.certificateAuthorities: /usr/share/kibana/config/certs/elastic-stack-ca.crt
+
+# kibana authenticates to elasticsearch
+elasticsearch.hosts: ${ELASTICSEARCH_HOSTS}
+elasticsearch.username: "kibana_system"
+elasticsearch.password: ${KIBANA_PASSWORD}
+
+# keys for encrypting saved objects
+xpack.security.encryptionKey: "abcdefghijklmnopqrstuvwxyz012345" # TODO: change this to a safe 32 chars passwords
+xpack.encryptedSavedObjects.encryptionKey: "abcdefghijklmnopqrstuvwxyz012345"
