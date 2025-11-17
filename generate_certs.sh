@@ -34,6 +34,7 @@ echo "creating CA..."
 # create CA (non-interactive, no pass)
 run_certutil 'elasticsearch-certutil ca --silent --out /certs/elastic-stack-ca.p12 --pass ""'
 
+# TODO: migrate ip and dns to config file
 echo "creating a certificate for nodes + kibana..."
 run_certutil 'elasticsearch-certutil cert --silent --name "elastic-cert" --dns "elasticsearch" --dns "kibana" --dns "localhost" --ip "127.0.0.1" --ca /certs/elastic-stack-ca.p12 --ca-pass "" --out /certs/elastic-certificates.p12 --pass ""'
 
@@ -42,6 +43,7 @@ echo "extracting certificate and key (PEM) for kibana / server SSL..."
 # if openssl not present in container, do it on host
 openssl pkcs12 -in "$OUT_DIR/elastic-certificates.p12" -clcerts -nokeys -out "$OUT_DIR/elastic-cert.crt" -passin pass:
 openssl pkcs12 -in "$OUT_DIR/elastic-certificates.p12" -nocerts -nodes -out "$OUT_DIR/elastic-cert.key" -passin pass:
+openssl pkcs12 -in "$OUT_DIR/elastic-stack-ca.p12" -out "$OUT_DIR/elastic-stack-ca.crt" -nodes -nokeys -passin pass:
 
 echo "combinie and list files"
 cat "$OUT_DIR/elastic-cert.crt" "$OUT_DIR/elastic-cert.key" > "$OUT_DIR/elastic-cert-combined.pem" || true
@@ -59,5 +61,14 @@ else
   echo "  sudo chown -R $(id -u):$(id -g) $OUT_DIR"
   echo "files are left in $OUT_DIR (owned by root)."
 fi
+
+echo "fixing permissions for easticsearch..."
+sudo chown $(whoami):$(whoami) "$OUT_DIR"/*
+chmod 755 "$OUT_DIR"
+chmod 644 "$OUT_DIR"/*.p12 2>/dev/null || true
+chmod 644 "$OUT_DIR"/*.crt 2>/dev/null || true
+chmod 644 "$OUT_DIR"/*.key 2>/dev/null || true
+
+echo "certificates are readable by elasticsearch."
 
 echo "done."

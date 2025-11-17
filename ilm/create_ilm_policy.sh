@@ -9,10 +9,12 @@
 
 set -e
 
-ES_URL=${ES_URL:-http://localhost:9200}
+ES_URL=${ES_URL:-https://localhost:9200}
+CA_CERT=${CA_CERT:-certs/elastic-cert.crt}
+AUTH="-u elastic:${ELASTIC_PASSWORD}"
 
 echo "creating ILM policy..."
-curl -X PUT "$ES_URL/_ilm/policy/logs_policy" \
+curl --cacert "$CA_CERT" $AUTH -X PUT "$ES_URL/_ilm/policy/logs_policy" \
   -H 'Content-Type: application/json' \
   -d '{
     "policy": {
@@ -25,8 +27,7 @@ curl -X PUT "$ES_URL/_ilm/policy/logs_policy" \
         "warm": {
           "min_age": "7d",
           "actions": {
-            "shrink": { "number_of_shards": 1 },
-            "forcemerge": { "max_num_segments": 1 }
+            "shrink": { "number_of_shards": 1 }
           }
         },
         "delete": {
@@ -38,8 +39,8 @@ curl -X PUT "$ES_URL/_ilm/policy/logs_policy" \
   }'
 
 echo
-echo "creating index template for logs..."
-curl -X PUT "$ES_URL/_index_template/logs_template" \
+echo "creating index template..."
+curl --cacert "$CA_CERT" $AUTH -X PUT "$ES_URL/_index_template/logs_template" \
   -H 'Content-Type: application/json' \
   -d '{
     "index_patterns": ["logs-*"],
@@ -47,13 +48,16 @@ curl -X PUT "$ES_URL/_index_template/logs_template" \
       "settings": {
         "index.lifecycle.name": "logs_policy",
         "index.lifecycle.rollover_alias": "logs"
+      },
+      "aliases": {
+        "logs": { "is_write_index": false }
       }
     }
   }'
 
 echo
-echo "creating initial index alias..."
-curl -X PUT "$ES_URL/logs-000001" \
+echo "creating initial index..."
+curl --cacert "$CA_CERT" $AUTH -X PUT "$ES_URL/logs-000001" \
   -H 'Content-Type: application/json' \
   -d '{
     "aliases": {
@@ -61,4 +65,4 @@ curl -X PUT "$ES_URL/logs-000001" \
     }
   }'
 
-echo "ILM policy and template created."
+echo "ILM policy + template + initial index created."

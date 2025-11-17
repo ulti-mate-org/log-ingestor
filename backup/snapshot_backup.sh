@@ -24,6 +24,6 @@ curl -s -X PUT "$ES_URL/_snapshot/$REPO_NAME/snapshot_$DATE?wait_for_completion=
   -d '{"indices": "logs-*"}' | jq .
 
 echo "compressing snapshot..."
-tar -czf "./snapshots/snapshot_$DATE.tar.gz" -C ./snapshots .
+tar -czf "./snapshots/snapshot_$DATE.tar.gz" -C ./snapshots . || echo "compression failed, trying again in 5 min (if no changes to crontab)"
 
 echo "snapshot completed and compressed."
