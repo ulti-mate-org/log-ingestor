@@ -6,6 +6,7 @@
 # license: MIT
 # author: Emiliano Rizzonelli (emiliano.rizzonelli@proton.me)
 # usage: ./setup_elasticsearch.sh
+#!/bin/bash
 
 set -euo pipefail
 
@@ -16,7 +17,7 @@ ES_URL="https://localhost:9200"
 ENV_FILE="$ROOT_DIR/.env"
 
 echo "starting elasticsearch..."
-docker compose -f "$COMPOSE_FILE" up -d elasticsearch
+docker compose -f "$COMPOSE_FILE" up --build -d elasticsearch
 
 echo "waiting for elasticsearch to be reachable"
 for i in {1..60}; do
@@ -43,16 +44,38 @@ KIBANA_PASS=$(docker exec -i elasticsearch \
     bin/elasticsearch-reset-password -u kibana_system -b --url "$ES_URL" \
     | awk -F': ' '/New value/ {print $2}' | tr -d '[:space:]')
 
+
+echo "creating API key for Go logging service..."
+API_KEY_JSON=$(curl -s --cacert "$CERT_DIR/elastic-cert.crt" -u "elastic:$ELASTIC_PASS" -X POST "$ES_URL/_security/api_key" -H "Content-Type: application/json" -d '{
+  "name": "go-log-ingestor",
+  "role_descriptors": {
+    "log_ingestor_role": {
+      "cluster": ["monitor"],
+      "index": [{
+        "names": ["logs-*"],
+		"privileges": ["create_index","create","write","auto_configure"]
+      }]
+    }
+  }
+}')
+
+ID=$(echo "$API_KEY_JSON" | jq -r '.id')
+API_KEY_SECRET=$(echo "$API_KEY_JSON" | jq -r '.api_key')
+
+ENCODED_KEY=$(printf "%s:%s" "$ID" "$API_KEY_SECRET" | base64 | tr -d '\n')
+
 echo "writing .env file"
 
 echo "# auto-generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$ENV_FILE"
 echo "ELASTIC_PASSWORD=$ELASTIC_PASS" >> "$ENV_FILE"
 echo "KIBANA_PASSWORD=$KIBANA_PASS" >> "$ENV_FILE"
+echo "ELASTIC_API_KEY=$ENCODED_KEY" >> "$ENV_FILE"
+echo "" >> "$ENV_FILE"
 
 echo "restarting services so they use the new credentials"
-docker compose -f "$COMPOSE_FILE" up -d
+docker compose -f "$COMPOSE_FILE" up --build -d log-ingestor kibana
 
 echo
 echo "elastic password:       $ELASTIC_PASS"
 echo "kibana_system password: $KIBANA_PASS"
-
+echo "elastic API key:        $ENCODED_KEY"

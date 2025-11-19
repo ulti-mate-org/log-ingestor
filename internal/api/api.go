@@ -9,6 +9,9 @@ import (
 	"time"
 
 	"github.com/ulti-mate-org/logging/internal/elastic"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/ulti-mate-org/logging/internal/metrics"
 )
 
 // API holds dependencies like the Elasticsearch client.
@@ -18,13 +21,22 @@ type API struct {
 
 // ListenAndServe starts the HTTP server on the specified address.
 func (a *API) ListenAndServe(addr string) error {
+	
+	metrics.PrometehusInit()
+
 	http.HandleFunc("/ingest", a.ingestHandler)
 	http.HandleFunc("/health", healthCheckHandler)
+	http.Handle("/metrics", promhttp.Handler())
+
 	return http.ListenAndServe(addr, nil)
 }
 
 // ingestHandler handles data ingestion requests.
 func (a *API) ingestHandler(w http.ResponseWriter, r *http.Request) {
+	// use prometheus for metrics calculation
+	timer := prometheus.NewTimer(metrics.IngestLatency)
+    defer timer.ObserveDuration()
+
 	// neat neat defer, love this feature
 	defer r.Body.Close()
 
@@ -33,7 +45,8 @@ func (a *API) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// need to do this since fluentbit is sending json_lines (multiple json objects in one body)
+	metrics.IngestRequests.Inc()
+
 	decoder := json.NewDecoder(r.Body)
 	count := 0
 
@@ -44,6 +57,7 @@ func (a *API) ingestHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			fmt.Println("error decoding record:", err)
+			metrics.IngestErrors.Inc()
 			http.Error(w, "invalid JSON", http.StatusBadRequest)
 			return
 		}
@@ -64,12 +78,15 @@ func (a *API) ingestHandler(w http.ResponseWriter, r *http.Request) {
 		cancel()
 		if err != nil {
 			fmt.Println("error indexing record:", err)
+			metrics.IngestErrors.Inc()
 			http.Error(w, "failed to index document", http.StatusInternalServerError)
 			return
 		}
 
 		count++
 	}
+
+	metrics.LogsIngested.Add(float64(count))
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("ok (%d docs indexed)", count)))
@@ -80,3 +97,20 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
 }
+
+// metricsHandler handles metrics requests.
+// func metricsHandler(w http.ResponseWriter, r *http.Request) {
+	
+//	if r.Method != http.MethodGet {
+//		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+//	}
+//
+//	m, err := metrics.Collect()
+//	if err != nil {
+//		fmt.Println("error collecting metrics:", err)
+//		http.Error(w, "failed to collect metrics", http.StatusInternalServerError)
+//		return
+//	}
+//
+//	w.Write([]byte(m))
+// }

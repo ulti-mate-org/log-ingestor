@@ -8,13 +8,14 @@ import (
 
 func main() {
 	fmt.Println("logging service starting...")
-
-	elasticClient, err := elastic.NewElasticClient([]string{"http://elasticsearch:9200"}, "logs")
+	// TODO: migrate to config file
+	// TODO: change the logs index to a daily index
+	elasticClient, err := elastic.NewElasticClient([]string{"https://elasticsearch:9200"}, "logs-date")
 	if err != nil {
 		fmt.Println("error creating Elasticsearch client:", err)
 		return
 	}
-
+	
 	api := &api.API{
 		Elastic: elasticClient,
 	}
