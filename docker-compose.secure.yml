@@ -1,0 +1,59 @@
+services:
+  log-ingestor:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingestor
+    container_name: log-ingestor
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    environment:
+      - INGESTOR_PORT=${INGESTOR_PORT:-8080}
+      - ES_URL=https://elasticsearch:9200
+      - ELASTIC_CA_CERT=/etc/elastic/certs/elastic-cert.crt
+      - ELASTIC_API_KEY
+    ports:
+      - "${INGESTOR_PORT:-8080}:8080"
+    networks:
+      - logging-net
+    volumes:
+      - ./certs:/etc/elastic/certs:ro
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+    container_name: elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - path.repo=/usr/share/elasticsearch/snapshots
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+      - ./snapshots:/usr/share/elasticsearch/snapshots
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./certs:/usr/share/elasticsearch/config/certs:ro
+    ports:
+      - "9200:9200"
+    networks:
+      - logging-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.2.0
+    container_name: kibana
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - KIBANA_PASSWORD
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ./certs:/usr/share/kibana/config/certs:ro
+    ports:
+      - "5601:5601"
+    networks:
+      - logging-net
+
+networks:
+  logging-net:
+    external: true
