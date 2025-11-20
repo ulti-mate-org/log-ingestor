@@ -6,6 +6,13 @@ import (
 	"github.com/ulti-mate-org/logging/internal/elastic"
 )
 
+// Build information - to be set during build time
+var (
+    Version   = "dev"
+    Commit    = "none"
+    BuildDate = "unknown"
+)
+
 func main() {
 	fmt.Println("logging service starting...")
 	// TODO: migrate to config file
@@ -16,10 +23,12 @@ func main() {
 		return
 	}
 	
-	api := &api.API{
+	a := &api.API{
 		Elastic: elasticClient,
 	}
+	
+	api.SetBuildInfo(Commit, Version, BuildDate)
 
-	api.ListenAndServe(":8080")
+	a.ListenAndServe(":8080")
 	fmt.Println("logging service stopped.")
 }

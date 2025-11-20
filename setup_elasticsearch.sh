@@ -70,6 +70,10 @@ echo "# auto-generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$ENV_FILE"
 echo "ELASTIC_PASSWORD=$ELASTIC_PASS" >> "$ENV_FILE"
 echo "KIBANA_PASSWORD=$KIBANA_PASS" >> "$ENV_FILE"
 echo "ELASTIC_API_KEY=$ENCODED_KEY" >> "$ENV_FILE"
+echo "VERSION=$(git describe --tags --always)" >> "$ENV_FILE"
+echo "COMMIT=$(git rev-parse HEAD)" >> "$ENV_FILE"
+echo "BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$ENV_FILE"
+
 echo "" >> "$ENV_FILE"
 
 echo "restarting services so they use the new credentials"

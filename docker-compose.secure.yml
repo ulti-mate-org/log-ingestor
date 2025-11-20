@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ingestor
+      args:
+          VERSION: ${VERSION:-dev}
+          COMMIT: ${COMMIT:-none}
+          BUILD_DATE: ${BUILD_DATE:-unknown}
     container_name: log-ingestor
     restart: unless-stopped
     depends_on:

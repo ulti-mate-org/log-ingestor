@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ulti-mate-org/logging/internal/elastic"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/ulti-mate-org/logging/internal/elastic"
 	"github.com/ulti-mate-org/logging/internal/metrics"
 )
 
@@ -18,6 +18,12 @@ import (
 type API struct {
 	Elastic *elastic.ElasticClient
 }
+
+var (
+	commit    string
+	version   string
+	buildDate string
+)
 
 // ListenAndServe starts the HTTP server on the specified address.
 func (a *API) ListenAndServe(addr string) error {
@@ -27,7 +33,8 @@ func (a *API) ListenAndServe(addr string) error {
 	http.HandleFunc("/ingest", a.ingestHandler)
 	http.HandleFunc("/health", healthCheckHandler)
 	http.Handle("/metrics", promhttp.Handler())
-
+	http.HandleFunc("/version", versionHandler)	
+	
 	return http.ListenAndServe(addr, nil)
 }
 
@@ -96,6 +103,31 @@ func (a *API) ingestHandler(w http.ResponseWriter, r *http.Request) {
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+// versionHandler simply returns the git commit, build time and version tag.
+func versionHandler(w http.ResponseWriter, r *http.Request) {
+	
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"version":   version,
+		"commit":    commit,
+		"buildDate": buildDate,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
+// SetBuildInfo sets the build information.
+func SetBuildInfo(v, c, b string) {
+	version = v
+	commit = c
+	buildDate = b
 }
 
 // metricsHandler handles metrics requests.

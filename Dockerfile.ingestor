@@ -13,6 +13,13 @@ COPY ./cmd ./cmd
 COPY ./internal ./internal
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /log-ingestor ./cmd/server/main.go
+ARG VERSION
+ARG COMMIT
+ARG BUILD_DATE
+
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
+    -o /log-ingestor ./cmd/server/main.go
 
 FROM alpine:3.20
 
