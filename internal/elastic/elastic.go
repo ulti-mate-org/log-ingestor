@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
-	"os"
 )
 
 // ElasticClient wraps the Elasticsearch client.
@@ -64,7 +65,14 @@ func (ec *ElasticClient) IndexDocument(ctx context.Context, doc map[string]any) 
 
 	res, err := req.Do(ctx, ec.Client)
 	if err != nil {
-		return fmt.Errorf("index request failed: %w", err)
+		// consider 429 (too many req) and 503 (cluster problem) errors
+		if res.StatusCode == 429 {
+			return fmt.Errorf("elasticsearch rate limit exceeded: %w", err)
+		} else if res.StatusCode == 503 {
+			return fmt.Errorf("elasticsearch service unavailable: %w", err)
+		}
+
+		return fmt.Errorf("request error: %w", err)
 	}
 	defer res.Body.Close()
 
