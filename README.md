@@ -52,8 +52,8 @@ To checkout a simple implementation of a working logger see [this *logger templa
 ## Roadmap / TODO
 
 * [ ] Integrate Fluent Bit for file/tail ingestion
-* [ ] Add batching support before indexing to ES
-* [ ] Add retry/backoff logic on failures
+* [x] Add batching support before indexing to ES
+* [x] Add retry/backoff logic on failures
 * [ ] Add structured log validation schema
 * [ ] Add querying or streaming endpoints (optional future work)
 * [ ] Add configuration parsing and seeding (no dotenv)
@@ -65,3 +65,4 @@ To checkout a simple implementation of a working logger see [this *logger templa
 - https://www.elastic.co/docs/api/doc/kibana/
 - https://pkg.go.dev/github.com/prometheus/client_golang/prometheus#hdr-Metrics 
 - https://www.elastic.co/docs/deploy-manage/deploy/self-managed/configure-elasticsearch
+
