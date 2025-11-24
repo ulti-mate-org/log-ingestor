@@ -1,17 +1,17 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/ulti-mate-org/logging/internal/elastic"
 	"github.com/ulti-mate-org/logging/internal/metrics"
+	"github.com/ulti-mate-org/logging/internal/queue"
+	"github.com/ulti-mate-org/logging/internal/models"
 )
 
 // API holds dependencies like the Elasticsearch client.
@@ -58,7 +58,7 @@ func (a *API) ingestHandler(w http.ResponseWriter, r *http.Request) {
 	count := 0
 
 	for decoder.More() {
-		var record map[string]any
+		var record models.LogRecord
 		if err := decoder.Decode(&record); err != nil {
 			if err == io.EOF {
 				break
@@ -71,25 +71,18 @@ func (a *API) ingestHandler(w http.ResponseWriter, r *http.Request) {
 
 		// handle nested json since log contains data as a string
 		if logStr, ok := record["log"].(string); ok {
-			var inner map[string]any
+			var inner models.LogRecord
 			if err := json.Unmarshal([]byte(logStr), &inner); err == nil {
 				record["log"] = inner
 			}
 		}
-
-		// fmt.Println("parsed record:", record)
-
-		// index the record
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		err := a.Elastic.IndexDocument(ctx, record)
-		cancel()
-		if err != nil {
-			fmt.Println("error indexing record:", err)
-			metrics.IngestErrors.Inc()
-			http.Error(w, "failed to index document", http.StatusInternalServerError)
+		
+		if err := queue.Enqueue(record); err != nil {
+			http.Error(w, "queueu is full", http.StatusTooManyRequests)
 			return
 		}
 
+		// fmt.Println("parsed record:", record)
 		count++
 	}
 
@@ -113,14 +106,12 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"version":   version,
 		"commit":    commit,
 		"buildDate": buildDate,
 	})
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
 }
 
 // SetBuildInfo sets the build information.

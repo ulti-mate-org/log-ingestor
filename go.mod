@@ -3,6 +3,7 @@ module github.com/ulti-mate-org/logging
 go 1.25.3
 
 require (
+	github.com/eapache/queue v1.1.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.0
 	github.com/prometheus/client_golang v1.23.2
 )
