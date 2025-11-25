@@ -13,5 +13,5 @@ elasticsearch.username: "kibana_system"
 elasticsearch.password: ${KIBANA_PASSWORD}
 
 # keys for encrypting saved objects
-xpack.security.encryptionKey: "abcdefghijklmnopqrstuvwxyz012345" # TODO: change this to a safe 32 chars passwords
-xpack.encryptedSavedObjects.encryptionKey: "abcdefghijklmnopqrstuvwxyz012345"
+xpack.security.encryptionKey: ${XPACK_SECURITY_ENKEY}
+xpack.encryptedSavedObjects.encryptionKey: ${XPACK_SAVEDOBJ_ENKEY}

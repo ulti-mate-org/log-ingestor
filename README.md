@@ -2,20 +2,25 @@
 
 `log-ingestor` is a lightweight, efficient **log ingestion pipeline** built in Go, designed for **small to medium volumes** of structured JSON logs.
 
-It provides:
-* an HTTP ingestion endpoint
-* Elasticsearch indexing
-* Prometheus metrics
-* a simple setup workflow to bring up Elasticsearch + Kibana
-
 Its focus is on **simplicity**, **performance**, and **a minimal operational footprint**.
 
-## Tech Stack
+## Provides
 
 * **Go** (net/http + Prometheus client)
 * **Elasticsearch** (data store)
 * **Kibana** (log exploration UI)
 * Future: **Fluent Bit** (avoid sending logs from backend)
+
+## Usage
+
+The whole pipeline is built on docker containers. After cloning the repo you can simply run the setup_logging.sh script and it all should work.
+```
+git clone https://github.com/ulti-mate-org/log-ingestor && cd log-ingestor
+chmod +x generate_certs.sh
+./generate_certs.sh
+chmod +x setup_logging.sh
+./setup_logging.sh
+```
 
 ## Setup
 
@@ -28,7 +33,7 @@ Its focus is on **simplicity**, **performance**, and **a minimal operational foo
 ### 2. Start Whole Stack (with TLS enabled)
 
 ```
-./setup_elasticsearch.sh
+./setup_logging.sh
 ```
 
 ### 3. Log in to Kibana
@@ -42,7 +47,7 @@ https://localhost:5601/
 Credentials:
 
 * **Username:** `elastic`
-* **Password:** value of your `ELASTIC_PASSWORD` environment variable (printed by generate_certs.sh)
+* **Password:** value of your `ELASTIC_PASSWORD` environment variable (printed by setup_logging.sh)
 
 ## Note
 
