@@ -1,3 +1,10 @@
+# LOCAL DEVELOPMENT ONLY -- NOT PRODUCTION READY.
+#
+# This stack runs elasticsearch with xpack.security disabled: no TLS, no
+# authentication, anyone who can reach the port is a superuser. It was renamed
+# from docker-compose.yml so that a stray `-f` cannot silently deploy an
+# unauthenticated cluster. Production uses docker-compose.secure.yml.
+
 services:
   log-ingestor:
     build:
@@ -8,7 +15,7 @@ services:
     depends_on:
       - elasticsearch
     ports:
-      - "${INGESTOR_PORT:-8080}:8080"
+      - "127.0.0.1:${INGESTOR_PORT:-8080}:8080"
     networks:
       - logging-net
       
@@ -22,7 +29,7 @@ services:
       - path.repo=/usr/share/elasticsearch/snapshots
       - xpack.security.enabled=false # has to be disabled since it is true by default, obviously very unsafe NOT EVEN CLOSE TO PRODUCTION READY
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     volumes:
       - ./data/elasticsearch:/usr/share/elasticsearch/data
       - ./snapshots:/usr/share/elasticsearch/snapshots
@@ -39,7 +46,7 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_SSL_ENABLED=false
     ports:
-      - "5601:5601"
+      - "127.0.0.1:5601:5601"
     networks:
       - logging-net
       
