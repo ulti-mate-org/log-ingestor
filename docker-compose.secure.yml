@@ -17,7 +17,9 @@ services:
       - ELASTIC_CA_CERT=/etc/elastic/certs/elastic-cert.crt
       - ELASTIC_API_KEY
     ports:
-      - "${INGESTOR_PORT:-8080}:8080"
+      # Loopback only: the backend reaches the ingestor over logging-net.
+      # The published port exists for host-side health checks and debugging.
+      - "127.0.0.1:${INGESTOR_PORT:-8080}:8080"
     networks:
       - logging-net
     volumes:
@@ -37,7 +39,8 @@ services:
       - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
       - ./certs:/usr/share/elasticsearch/config/certs:ro
     ports:
-      - "9200:9200"
+      # Never expose elasticsearch publicly; tunnel in over SSH instead.
+      - "127.0.0.1:9200:9200"
     networks:
       - logging-net
 
@@ -56,7 +59,8 @@ services:
       - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
       - ./certs:/usr/share/kibana/config/certs:ro
     ports:
-      - "5601:5601"
+      # Never expose kibana publicly; tunnel in over SSH instead.
+      - "127.0.0.1:5601:5601"
     networks:
       - logging-net
 
