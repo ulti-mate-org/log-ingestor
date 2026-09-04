@@ -15,13 +15,29 @@ CERT_DIR="$ROOT_DIR/certs"
 COMPOSE_FILE="docker-compose.secure.yml"
 ES_URL="https://localhost:9200"
 ENV_FILE="$ROOT_DIR/.env"
+PARENT_ENV_FILE="$ROOT_DIR/../.env"
+
+# Load the orchestrator's .env so variables like ES_URL and the X-Pack
+# encryption keys are available to docker compose when it runs from this
+# directory. Generated credentials below are still written to ./.env.
+if [ -f "$PARENT_ENV_FILE" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$PARENT_ENV_FILE"
+    set +a
+fi
+
+# Host-side curl/health checks hit the published Elasticsearch port.
+# ES_URL (possibly from the orchestrator .env) is passed to docker compose
+# for Kibana and used by docker exec inside the Elasticsearch container.
+ES_URL_HOST="https://localhost:9200"
 
 echo "starting elasticsearch..."
 docker compose -f "$COMPOSE_FILE" up --build -d elasticsearch
 
 echo "waiting for elasticsearch to be reachable"
 for i in {1..60}; do
-    if curl  --cacert "$CERT_DIR/elastic-cert.crt" "$ES_URL/_cluster/health"; then
+    if curl  --cacert "$CERT_DIR/elastic-cert.crt" "$ES_URL_HOST/_cluster/health"; then
         echo "elasticsearch is up!"
         break
     fi
@@ -29,7 +45,7 @@ for i in {1..60}; do
     sleep 2
 done
 
-if ! curl --cacert "$CERT_DIR/elastic-cert.crt" "$ES_URL/_cluster/health"; then
+if ! curl --cacert "$CERT_DIR/elastic-cert.crt" "$ES_URL_HOST/_cluster/health"; then
     echo "ERROR: elasticsearch did not become ready in time."
     exit 1
 fi 
@@ -46,7 +62,7 @@ KIBANA_PASS=$(docker exec -i elasticsearch \
 
 
 echo "creating API key for Go logging service..."
-API_KEY_JSON=$(curl -s --cacert "$CERT_DIR/elastic-cert.crt" -u "elastic:$ELASTIC_PASS" -X POST "$ES_URL/_security/api_key" -H "Content-Type: application/json" -d '{
+API_KEY_JSON=$(curl -s --cacert "$CERT_DIR/elastic-cert.crt" -u "elastic:$ELASTIC_PASS" -X POST "$ES_URL_HOST/_security/api_key" -H "Content-Type: application/json" -d '{
   "name": "go-log-ingestor",
   "role_descriptors": {
     "log_ingestor_role": {
