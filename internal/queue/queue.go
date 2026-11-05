@@ -130,7 +130,7 @@ func worker(ctx context.Context, indexFunc func(ctx context.Context, batch []mod
 			metrics.BulkRequests.Inc()
 			start := time.Now()
 
-			callCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			err := indexFunc(callCtx, toSend)
 			cancel()
 
@@ -142,7 +142,7 @@ func worker(ctx context.Context, indexFunc func(ctx context.Context, batch []mod
 
 			metrics.BulkFailures.Inc()
 
-			// TODO: decide whevDther to retry
+			// TODO: decide whether to retry
 			if attempt >= 5 {
 				fmt.Printf("[queue] worker %d: dropping batch after %d attempts: %v\n", id, attempt, err)
 				return

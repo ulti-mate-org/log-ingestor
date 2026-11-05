@@ -48,7 +48,7 @@ func (ec *ElasticClient) BulkIndex(ctx context.Context, batch []map[string]any) 
 		Items  []map[string]map[string]any `json:"items"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
-		return nil
+		return fmt.Errorf("failed to decode bulk response: %w", err)
 	}
 
 	if !resp.Errors {

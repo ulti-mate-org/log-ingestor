@@ -86,8 +86,8 @@ var (
 	)
 )
 
-// PrometehusInit initializes Prometheus metrics and registers them.
-func PrometehusInit() {
+// PrometheusInit initializes Prometheus metrics and registers them.
+func PrometheusInit() {
 	prometheus.MustRegister(
 		LogsIngested,
 		IngestRequests, 

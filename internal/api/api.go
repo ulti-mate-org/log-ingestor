@@ -28,7 +28,7 @@ var (
 // ListenAndServe starts the HTTP server on the specified address.
 func (a *API) ListenAndServe(addr string) error {
 	
-	metrics.PrometehusInit()
+	metrics.PrometheusInit()
 
 	http.HandleFunc("/ingest", a.ingestHandler)
 	http.HandleFunc("/health", healthCheckHandler)
