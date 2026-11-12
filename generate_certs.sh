@@ -50,24 +50,14 @@ cat "$OUT_DIR/elastic-cert.crt" "$OUT_DIR/elastic-cert.key" > "$OUT_DIR/elastic-
 
 ls -la "$OUT_DIR"
 
-# try to chown files to the current user so people can edit them without sudo
+# The files are created by root inside the Elasticsearch container. Hand them to
+# the current user through the same image, so no sudo (and no password prompt) is
+# needed. Scripts that run unattended cannot answer a sudo prompt.
 uid=$(id -u)
 gid=$(id -g)
-echo "attempting to chown $OUT_DIR to $(id -un):$(id -gn) (uid:$uid gid:$gid)"
-if chown -R "$uid:$gid" "$OUT_DIR" 2>/dev/null; then
-  echo "chown succeeded."
-else
-  echo "chown failed: you may need to run:"
-  echo "  sudo chown -R $(id -u):$(id -g) $OUT_DIR"
-  echo "files are left in $OUT_DIR (owned by root)."
-fi
-
-echo "fixing permissions for easticsearch..."
-sudo chown $(whoami):$(whoami) "$OUT_DIR"/*
-chmod 755 "$OUT_DIR"
-chmod 644 "$OUT_DIR"/*.p12 2>/dev/null || true
-chmod 644 "$OUT_DIR"/*.crt 2>/dev/null || true
-chmod 644 "$OUT_DIR"/*.key 2>/dev/null || true
+echo "giving $OUT_DIR to $(id -un) (uid:$uid gid:$gid)..."
+docker run --rm --user 0:0 -v "$OUT_DIR":/certs --entrypoint sh "$ES_IMAGE" \
+  -c "chown -R $uid:$gid /certs && chmod 755 /certs && chmod 644 /certs/*.p12 /certs/*.crt /certs/*.key 2>/dev/null || true"
 
 echo "certificates are readable by elasticsearch."
 
